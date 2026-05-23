@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@SuppressWarnings("null")
 public class DespachoServiceImpl implements DespachoService{
 
     @Autowired

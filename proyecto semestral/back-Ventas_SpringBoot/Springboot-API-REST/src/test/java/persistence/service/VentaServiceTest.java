@@ -18,6 +18,7 @@ import java.time.LocalDate;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 public class VentaServiceTest {
 
     @Mock

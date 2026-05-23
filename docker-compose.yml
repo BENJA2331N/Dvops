@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  database:
+    image: mysql:8.0
+    container_name: despacho_db
+    environment:
+      MYSQL_DATABASE: despacho_db
+      MYSQL_USER: despacho_user
+      MYSQL_PASSWORD: despacho_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+
+  backend:
+    build:
+      context: ./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+      dockerfile: Dockerfile
+    container_name: despacho_backend
+    ports:
+      - "8081:8081"
+    environment:
+      - DB_ENDPOINT=database
+      - DB_PORT=3306
+      - DB_NAME=despacho_db
+      - DB_USERNAME=despacho_user
+      - DB_PASSWORD=despacho_password
+    depends_on:
+      - database
+    restart: always
+
+  frontend:
+    build:
+      context: ./proyecto semestral/front_despacho
+      dockerfile: Dockerfile
+    container_name: despacho_frontend
+    ports:
+      - "80:8080"
+    depends_on:
+      - backend
+    restart: always
+
+volumes:
+  db_data:
