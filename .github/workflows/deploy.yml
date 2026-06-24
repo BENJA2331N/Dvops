@@ -1,0 +1,124 @@
+name: Deploy to Amazon ECS
+
+on:
+  push:
+    branches:
+      - main
+      - deploy
+
+env:
+  AWS_REGION: us-east-1
+
+jobs:
+  deploy-all:
+    name: Build, Push and Deploy All Services
+    runs-on: ubuntu-latest
+
+    steps:
+      # Paso 1: Descargar el código actual
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Paso 2: Autenticación segura usando los GitHub Secrets (IE5)
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Paso 3: Conectar GitHub con tu registro privado de Amazon ECR
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ==========================================
+      # 1. SERVICIO DE VENTAS (API-VENTAS)
+      # ==========================================
+      - name: Build, tag, and push Ventas image to Amazon ECR
+        id: build-ventas
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPO_NAME_VENTAS }} # Nombre del repositorio ECR para Ventas
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f "proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile" "proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST"
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Fill in the new image ID in the Ventas task definition
+        id: task-def-ventas
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: .aws/task-definition-ventas.json
+          container-name: ${{ secrets.ECS_CONTAINER_NAME_VENTAS }}
+          image: ${{ steps.build-ventas.outputs.image }}
+
+      - name: Deploy Ventas to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def-ventas.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME_VENTAS }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
+
+      # ==========================================
+      # 2. SERVICIO DE DESPACHOS (API-DESPACHOS)
+      # ==========================================
+      - name: Build, tag, and push Despachos image to Amazon ECR
+        id: build-despachos
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPO_NAME_DESPACHOS }} # Nombre del repositorio ECR para Despachos
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f "proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile" "proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO"
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Fill in the new image ID in the Despachos task definition
+        id: task-def-despachos
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: .aws/task-definition-despachos.json
+          container-name: ${{ secrets.ECS_CONTAINER_NAME_DESPACHOS }}
+          image: ${{ steps.build-despachos.outputs.image }}
+
+      - name: Deploy Despachos to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def-despachos.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME_DESPACHOS }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
+
+      # ==========================================
+      # 3. SERVICIO DE FRONTEND (WEB-FRONTEND)
+      # ==========================================
+      - name: Build, tag, and push Frontend image to Amazon ECR
+        id: build-frontend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ${{ secrets.ECR_REPO_NAME_FRONTEND }} # Nombre del repositorio ECR para Frontend
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f "proyecto semestral/front_despacho/Dockerfile" "proyecto semestral/front_despacho"
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Fill in the new image ID in the Frontend task definition
+        id: task-def-frontend
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: .aws/task-definition-frontend.json
+          container-name: ${{ secrets.ECS_CONTAINER_NAME_FRONTEND }}
+          image: ${{ steps.build-frontend.outputs.image }}
+
+      - name: Deploy Frontend to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def-frontend.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME_FRONTEND }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
