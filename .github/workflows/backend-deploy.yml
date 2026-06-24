@@ -1,16 +1,14 @@
-name: Deploy Backend to AWS ECS
+name: Deploy Backend Despachos to ECR
 
 on:
   push:
     branches:
       - deploy
-      - main
     paths:
       - 'proyecto semestral/back-Despachos_SpringBoot/**'
-      - 'proyecto semestral/back-Ventas_SpringBoot/**'
 
 jobs:
-  deploy-backend:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -28,56 +26,12 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      # --- DESPACHOS SERVICE DEPLOYMENT ---
-      - name: Build, tag, and push Despachos image to Amazon ECR
+      - name: Build, tag, and push image to Amazon ECR
         uses: docker/build-push-action@v5
         with:
           context: "./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO"
           file: "./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile"
           push: true
           tags: |
-            ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:latest
-            ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:${{ github.sha }}
-
-      - name: Fill in the new image ID in the Despachos task definition
-        id: render-despachos
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: .aws/task-definition-despachos.json
-          container-name: ${{ secrets.ECS_CONTAINER_NAME_DESPACHOS }}
-          image: ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:${{ github.sha }}
-
-      - name: Deploy Despachos to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.render-despachos.outputs.task-definition }}
-          service: ${{ secrets.ECS_SERVICE_NAME_DESPACHOS }}
-          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-          wait-for-service-stability: true
-
-      # --- VENTAS SERVICE DEPLOYMENT ---
-      - name: Build, tag, and push Ventas image to Amazon ECR
-        uses: docker/build-push-action@v5
-        with:
-          context: "./proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST"
-          file: "./proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile"
-          push: true
-          tags: |
-            ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:latest
-            ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:${{ github.sha }}
-
-      - name: Fill in the new image ID in the Ventas task definition
-        id: render-ventas
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: .aws/task-definition-ventas.json
-          container-name: ${{ secrets.ECS_CONTAINER_NAME_VENTAS }}
-          image: ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:${{ github.sha }}
-
-      - name: Deploy Ventas to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.render-ventas.outputs.task-definition }}
-          service: ${{ secrets.ECS_SERVICE_NAME_VENTAS }}
-          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-          wait-for-service-stability: true
+            ${{ secrets.ECR_REPO_URL_DESPACHOS }}:latest
+            ${{ secrets.ECR_REPO_URL_DESPACHOS }}:${{ github.sha }}

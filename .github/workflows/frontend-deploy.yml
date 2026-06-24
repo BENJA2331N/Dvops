@@ -1,15 +1,14 @@
-name: Deploy Frontend to AWS ECS
+name: Deploy Frontend to ECR
 
 on:
   push:
     branches:
       - deploy
-      - main
     paths:
       - 'proyecto semestral/front_despacho/**'
 
 jobs:
-  deploy-frontend:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -27,7 +26,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Frontend image to Amazon ECR
+      - name: Build, tag, and push image to Amazon ECR
         uses: docker/build-push-action@v5
         with:
           context: "./proyecto semestral/front_despacho"
@@ -36,19 +35,3 @@ jobs:
           tags: |
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
-
-      - name: Fill in the new image ID in the Frontend task definition
-        id: render-frontend
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: .aws/task-definition-frontend.json
-          container-name: ${{ secrets.ECS_CONTAINER_NAME_FRONTEND }}
-          image: ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
-
-      - name: Deploy Frontend to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.render-frontend.outputs.task-definition }}
-          service: ${{ secrets.ECS_SERVICE_NAME_FRONTEND }}
-          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
-          wait-for-service-stability: true
