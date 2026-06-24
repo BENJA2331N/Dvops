@@ -39,15 +39,11 @@ jobs:
             ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:latest
             ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:${{ github.sha }}
 
-      - name: Download active task definition for Despachos
-        run: |
-          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION_DESPACHOS }} --query taskDefinition > task-def-despachos.json
-
       - name: Fill in the new image ID in the Despachos task definition
         id: render-despachos
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-def-despachos.json
+          task-definition: .aws/task-definition-despachos.json
           container-name: ${{ secrets.ECS_CONTAINER_NAME_DESPACHOS }}
           image: ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:${{ github.sha }}
 
@@ -70,15 +66,11 @@ jobs:
             ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:latest
             ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:${{ github.sha }}
 
-      - name: Download active task definition for Ventas
-        run: |
-          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION_VENTAS }} --query taskDefinition > task-def-ventas.json
-
       - name: Fill in the new image ID in the Ventas task definition
         id: render-ventas
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-def-ventas.json
+          task-definition: .aws/task-definition-ventas.json
           container-name: ${{ secrets.ECS_CONTAINER_NAME_VENTAS }}
           image: ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:${{ github.sha }}
 

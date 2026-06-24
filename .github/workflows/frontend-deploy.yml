@@ -37,15 +37,11 @@ jobs:
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
 
-      - name: Download active task definition for Frontend
-        run: |
-          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION_FRONTEND }} --query taskDefinition > task-def-frontend.json
-
       - name: Fill in the new image ID in the Frontend task definition
         id: render-frontend
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-def-frontend.json
+          task-definition: .aws/task-definition-frontend.json
           container-name: ${{ secrets.ECS_CONTAINER_NAME_FRONTEND }}
           image: ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
 
