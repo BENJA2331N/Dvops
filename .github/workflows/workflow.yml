@@ -29,7 +29,6 @@ steps:
     id: login-ecr
     uses: aws-actions/amazon-ecr-login@v2
 
-  # ---------------- BACKEND DESPACHOS ----------------
   - name: Build and push Backend Despachos
     uses: docker/build-push-action@v5
     with:
@@ -40,7 +39,6 @@ steps:
         ${{ steps.login-ecr.outputs.registry }}/back-despachos:latest
         ${{ steps.login-ecr.outputs.registry }}/back-despachos:${{ github.sha }}
 
-  # ---------------- BACKEND VENTAS ----------------
   - name: Build and push Backend Ventas
     uses: docker/build-push-action@v5
     with:
@@ -51,7 +49,6 @@ steps:
         ${{ steps.login-ecr.outputs.registry }}/back-ventas:latest
         ${{ steps.login-ecr.outputs.registry }}/back-ventas:${{ github.sha }}
 
-  # ---------------- FRONTEND ----------------
   - name: Build and push Frontend
     uses: docker/build-push-action@v5
     with:
@@ -93,7 +90,6 @@ steps:
 
   - name: Validate manifests
     run: |
-      echo "📁 Checking k8s folder"
       ls -R k8s
 
   - name: Deploy manifests
