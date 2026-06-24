@@ -4,8 +4,7 @@ on:
   push:
     branches:
       - deploy
-    paths:
-      - 'proyecto semestral/front_despacho/**'
+
 
 jobs:
   build-and-push:

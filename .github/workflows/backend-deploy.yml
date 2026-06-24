@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - deploy
-    paths:
-      - 'proyecto semestral/back-Despachos_SpringBoot/**'
 
 jobs:
   build-and-push:
