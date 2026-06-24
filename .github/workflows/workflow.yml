@@ -1,103 +1,99 @@
 name: Build and Deploy to Amazon EKS
 
 on:
-push:
-branches: [ deploy ]
+  push:
+    branches: [ deploy ]
 
 env:
-AWS_REGION: us-east-1
-EKS_CLUSTER_NAME: innovatech-eks
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: innovatech-eks
 
 jobs:
-build-and-push:
-runs-on: ubuntu-latest
+  build-and-push:
+    runs-on: ubuntu-latest
 
-```
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  - name: Configure AWS credentials
-    uses: aws-actions/configure-aws-credentials@v2
-    with:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-      aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-  - name: Login to Amazon ECR
-    id: login-ecr
-    uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-  - name: Build and push Backend Despachos
-    uses: docker/build-push-action@v5
-    with:
-      context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-      file: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile
-      push: true
-      tags: |
-        ${{ steps.login-ecr.outputs.registry }}/back-despachos:latest
-        ${{ steps.login-ecr.outputs.registry }}/back-despachos:${{ github.sha }}
+      - name: Build and push Backend Despachos
+        uses: docker/build-push-action@v5
+        with:
+          context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          file: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/back-despachos:latest
+            ${{ steps.login-ecr.outputs.registry }}/back-despachos:${{ github.sha }}
 
-  - name: Build and push Backend Ventas
-    uses: docker/build-push-action@v5
-    with:
-      context: ./back-Ventas_SpringBoot/Springboot-API-REST
-      file: ./back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile
-      push: true
-      tags: |
-        ${{ steps.login-ecr.outputs.registry }}/back-ventas:latest
-        ${{ steps.login-ecr.outputs.registry }}/back-ventas:${{ github.sha }}
+      - name: Build and push Backend Ventas
+        uses: docker/build-push-action@v5
+        with:
+          context: ./back-Ventas_SpringBoot/Springboot-API-REST
+          file: ./back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/back-ventas:latest
+            ${{ steps.login-ecr.outputs.registry }}/back-ventas:${{ github.sha }}
 
-  - name: Build and push Frontend
-    uses: docker/build-push-action@v5
-    with:
-      context: ./front_despacho
-      file: ./front_despacho/Dockerfile
-      push: true
-      tags: |
-        ${{ steps.login-ecr.outputs.registry }}/front-despacho:latest
-        ${{ steps.login-ecr.outputs.registry }}/front-despacho:${{ github.sha }}
-```
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./front_despacho
+          file: ./front_despacho/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/front-despacho:latest
+            ${{ steps.login-ecr.outputs.registry }}/front-despacho:${{ github.sha }}
 
-deploy:
-needs: build-and-push
-runs-on: ubuntu-latest
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
 
-```
-steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  - name: Configure AWS credentials
-    uses: aws-actions/configure-aws-credentials@v2
-    with:
-      aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-      aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-  - name: Update kubeconfig
-    run: |
-      aws eks update-kubeconfig \
-        --name ${{ env.EKS_CLUSTER_NAME }} \
-        --region ${{ env.AWS_REGION }}
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ env.EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
 
-  - name: Debug cluster
-    run: |
-      kubectl get nodes
-      kubectl get deployments -A
+      - name: Debug cluster
+        run: |
+          kubectl get nodes
+          kubectl get deployments -A
 
-  - name: Validate manifests
-    run: |
-      ls -R k8s
+      - name: Validate manifests
+        run: |
+          ls -R k8s/
 
-  - name: Deploy manifests
-    run: |
-      kubectl apply -f k8s/
+      - name: Deploy manifests
+        run: |
+          kubectl apply -f k8s/
 
-  - name: Verify deployment
-    run: |
-      kubectl get all
-      kubectl get pods -o wide
-```
+      - name: Verify deployment
+        run: |
+          kubectl get all
+          kubectl get pods -o wide
