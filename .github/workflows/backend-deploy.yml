@@ -1,14 +1,16 @@
-name: Deploy Backend
+name: Deploy Backend to AWS ECS
 
 on:
   push:
     branches:
       - deploy
+      - main
     paths:
       - 'proyecto semestral/back-Despachos_SpringBoot/**'
+      - 'proyecto semestral/back-Ventas_SpringBoot/**'
 
 jobs:
-  build-and-deploy:
+  deploy-backend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -20,43 +22,70 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION}}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to Amazon ECR
+      # --- DESPACHOS SERVICE DEPLOYMENT ---
+      - name: Build, tag, and push Despachos image to Amazon ECR
         uses: docker/build-push-action@v5
         with:
           context: "./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO"
           file: "./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile"
           push: true
           tags: |
-            ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-            ${{ secrets.ECR_REPO_URL_BACKEND }}:${{ github.sha }}
+            ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:latest
+            ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:${{ github.sha }}
 
-      - name: Deploy to EC2 via AWS SSM
+      - name: Download active task definition for Despachos
         run: |
-          # 1. Obtener la IP privada de la instancia de Base de Datos usando AWS CLI
-          DB_IP=$(aws ec2 describe-instances \
-            --instance-ids ${{ secrets.EC2_DB_INSTANCE_ID }} \
-            --query "Reservations[0].Instances[0].PrivateIpAddress" \
-            --output text \
-            --region ${{ secrets.AWS_REGION }})
-          
-          echo "La IP privada de la base de datos es: $DB_IP"
+          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION_DESPACHOS }} --query taskDefinition > task-def-despachos.json
 
-          # 2. Ejecutar comandos en la instancia del Backend via SSM
-          aws ssm send-command \
-            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-            --document-name "AWS-RunShellScript" \
-            --comment "Actualizar contenedor de Backend" \
-            --parameters commands="[
-              'aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}',
-              'docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest',
-              'docker stop backend || true',
-              'docker rm backend || true',
-              'docker run -d --name backend -p 8081:8081 -e DB_ENDPOINT=$DB_IP -e DB_PORT=3306 -e DB_NAME=despacho_db -e DB_USERNAME=despacho_user -e DB_PASSWORD=despacho_password ${{ secrets.ECR_REPO_URL_BACKEND }}:latest'
-            ]" \
-            --region ${{ secrets.AWS_REGION }}
+      - name: Fill in the new image ID in the Despachos task definition
+        id: render-despachos
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def-despachos.json
+          container-name: ${{ secrets.ECS_CONTAINER_NAME_DESPACHOS }}
+          image: ${{ secrets.ECR_REPO_URL_BACKEND_DESPACHOS }}:${{ github.sha }}
+
+      - name: Deploy Despachos to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-despachos.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME_DESPACHOS }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
+
+      # --- VENTAS SERVICE DEPLOYMENT ---
+      - name: Build, tag, and push Ventas image to Amazon ECR
+        uses: docker/build-push-action@v5
+        with:
+          context: "./proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST"
+          file: "./proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile"
+          push: true
+          tags: |
+            ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:latest
+            ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:${{ github.sha }}
+
+      - name: Download active task definition for Ventas
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION_VENTAS }} --query taskDefinition > task-def-ventas.json
+
+      - name: Fill in the new image ID in the Ventas task definition
+        id: render-ventas
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def-ventas.json
+          container-name: ${{ secrets.ECS_CONTAINER_NAME_VENTAS }}
+          image: ${{ secrets.ECR_REPO_URL_BACKEND_VENTAS }}:${{ github.sha }}
+
+      - name: Deploy Ventas to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-ventas.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME_VENTAS }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true

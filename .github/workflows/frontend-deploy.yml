@@ -1,14 +1,15 @@
-name: Deploy Frontend
+name: Deploy Frontend to AWS ECS
 
 on:
   push:
     branches:
       - deploy
+      - main
     paths:
       - 'proyecto semestral/front_despacho/**'
 
 jobs:
-  build-and-deploy:
+  deploy-frontend:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -20,13 +21,13 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION}}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push image to Amazon ECR
+      - name: Build, tag, and push Frontend image to Amazon ECR
         uses: docker/build-push-action@v5
         with:
           context: "./proyecto semestral/front_despacho"
@@ -36,27 +37,22 @@ jobs:
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
 
-      - name: Deploy to EC2 via AWS SSM
+      - name: Download active task definition for Frontend
         run: |
-          # 1. Obtener la IP privada de la instancia de Backend usando AWS CLI
-          BACKEND_IP=$(aws ec2 describe-instances \
-            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-            --query "Reservations[0].Instances[0].PrivateIpAddress" \
-            --output text \
-            --region ${{ secrets.AWS_REGION }})
-          
-          echo "La IP privada del backend es: $BACKEND_IP"
+          aws ecs describe-task-definition --task-definition ${{ secrets.ECS_TASK_DEFINITION_FRONTEND }} --query taskDefinition > task-def-frontend.json
 
-          # 2. Ejecutar comandos en la instancia del Frontend via SSM
-          aws ssm send-command \
-            --instance-ids ${{ secrets.EC2_FRONTEND_INSTANCE_ID }} \
-            --document-name "AWS-RunShellScript" \
-            --comment "Actualizar contenedor de Frontend" \
-            --parameters commands="[
-              'aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}',
-              'docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest',
-              'docker stop frontend || true',
-              'docker rm frontend || true',
-              'docker run -d --name frontend -p 80:8080 -e BACKEND_HOST=$BACKEND_IP ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest'
-            ]" \
-            --region ${{ secrets.AWS_REGION }}
+      - name: Fill in the new image ID in the Frontend task definition
+        id: render-frontend
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-def-frontend.json
+          container-name: ${{ secrets.ECS_CONTAINER_NAME_FRONTEND }}
+          image: ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
+
+      - name: Deploy Frontend to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render-frontend.outputs.task-definition }}
+          service: ${{ secrets.ECS_SERVICE_NAME_FRONTEND }}
+          cluster: ${{ secrets.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
