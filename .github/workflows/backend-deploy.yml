@@ -1,4 +1,4 @@
-name: Deploy Backend
+name: Deploy Backend Despachos to ECR
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
       - 'proyecto semestral/back-Despachos_SpringBoot/**'
 
 jobs:
-  build-and-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -20,7 +20,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION}}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         id: login-ecr
@@ -33,30 +33,5 @@ jobs:
           file: "./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile"
           push: true
           tags: |
-            ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-            ${{ secrets.ECR_REPO_URL_BACKEND }}:${{ github.sha }}
-
-      - name: Deploy to EC2 via AWS SSM
-        run: |
-          # 1. Obtener la IP privada de la instancia de Base de Datos usando AWS CLI
-          DB_IP=$(aws ec2 describe-instances \
-            --instance-ids ${{ secrets.EC2_DB_INSTANCE_ID }} \
-            --query "Reservations[0].Instances[0].PrivateIpAddress" \
-            --output text \
-            --region ${{ secrets.AWS_REGION }})
-          
-          echo "La IP privada de la base de datos es: $DB_IP"
-
-          # 2. Ejecutar comandos en la instancia del Backend via SSM
-          aws ssm send-command \
-            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-            --document-name "AWS-RunShellScript" \
-            --comment "Actualizar contenedor de Backend" \
-            --parameters commands="[
-              'aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}',
-              'docker pull ${{ secrets.ECR_REPO_URL_BACKEND }}:latest',
-              'docker stop backend || true',
-              'docker rm backend || true',
-              'docker run -d --name backend -p 8081:8081 -e DB_ENDPOINT=$DB_IP -e DB_PORT=3306 -e DB_NAME=despacho_db -e DB_USERNAME=despacho_user -e DB_PASSWORD=despacho_password ${{ secrets.ECR_REPO_URL_BACKEND }}:latest'
-            ]" \
-            --region ${{ secrets.AWS_REGION }}
+            ${{ secrets.ECR_REPO_URL_DESPACHOS }}:latest
+            ${{ secrets.ECR_REPO_URL_DESPACHOS }}:${{ github.sha }}
