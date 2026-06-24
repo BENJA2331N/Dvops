@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  database:
+  base-de-datos:
     image: mysql:8.0
     container_name: despacho_db
     environment:
@@ -15,7 +15,7 @@ services:
       - db_data:/var/lib/mysql
     restart: always
 
-  backend:
+  api-despachos:
     build:
       context: ./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
       dockerfile: Dockerfile
@@ -23,16 +23,34 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - DB_ENDPOINT=database
+      - DB_ENDPOINT=base-de-datos
       - DB_PORT=3306
       - DB_NAME=despacho_db
       - DB_USERNAME=despacho_user
       - DB_PASSWORD=despacho_password
     depends_on:
-      - database
+      - base-de-datos
     restart: always
 
-  frontend:
+  api-ventas:
+    build:
+      context: ./proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST
+      dockerfile: Dockerfile
+    container_name: ventas_backend
+    ports:
+      - "8082:8082"
+    environment:
+      - DB_ENDPOINT=base-de-datos
+      - DB_PORT=3306
+      - DB_NAME=despacho_db
+      - DB_USERNAME=despacho_user
+      - DB_PASSWORD=despacho_password
+      - SERVER_PORT=8082
+    depends_on:
+      - base-de-datos
+    restart: always
+
+  web-frontend:
     build:
       context: ./proyecto semestral/front_despacho
       dockerfile: Dockerfile
@@ -40,10 +58,11 @@ services:
     ports:
       - "80:8080"
     environment:
-      - BACKEND_HOST=backend
-      - NGINX_ENVSUBST_FILTER=BACKEND_HOST
+      - BACKEND_HOST=api-despachos
+      - VENTAS_HOST=api-ventas
     depends_on:
-      - backend
+      - api-despachos
+      - api-ventas
     restart: always
 
 volumes:
