@@ -3,13 +3,13 @@
 *.iml
 .idea/
 *.log
-
+  
 # Ignora dependencias locales
 target/
 .mvn/
 .settings/
 
-# Ignora control de versiones y sistema de build
+# Ig nora control de versiones y sistema de build
 .git/
 .gitignore
 docker-compose.override.yml
