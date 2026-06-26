@@ -46,3 +46,14 @@ jobs:
           
           # Aplica los cambios en el clúster
           kubectl apply -f kubernetes/03-frontend.yaml
+      - name: Obtener URL del Balanceador de Carga
+        run: |
+          echo "Esperando 10 segundos para que AWS responda..."
+          sleep 10
+          kubectl get svc frontend-service -n innovatech
+       
+       
+       
+
+        
+        
