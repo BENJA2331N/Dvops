@@ -3,7 +3,7 @@ name: Deploy Backend Despachos to ECR and EKS
 on:
   push:
     branches:
-      - deploy
+      - deploy 
 
 jobs:
   build-and-push:
