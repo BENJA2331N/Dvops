@@ -24,6 +24,8 @@ kind: Service
 metadata:
   name: frontend-service
   namespace: innovatech
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
 spec:
   type: LoadBalancer # IMPORTANTE: Crea el balanceador en AWS para darte URL pública
   selector:
@@ -32,3 +34,4 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 8080
+
