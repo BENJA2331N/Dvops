@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - deploy
+    paths:
+      - 'proyecto semestral/front_despacho/**'
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -27,8 +29,8 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         uses: docker/build-push-action@v5
         with:
-          context: "proyecto semestral/front_despacho"
-          file: "proyecto semestral/front_despacho/Dockerfile"
+          context: "./proyecto semestral/front_despacho"
+          file: "./proyecto semestral/front_despacho/Dockerfile"
           push: true
           tags: |
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
@@ -41,19 +43,17 @@ jobs:
 
       - name: Deploy to EKS Clúster
         run: |
-          # Reemplaza la imagen genérica del manifiesto por la URL real de ECR con el tag único del commit
+          # 1. Reemplaza la imagen genérica por la de tu ECR real con el hash único del commit
           sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g' kubernetes/03-frontend.yaml
           
-          # Aplica los cambios en el clúster
+          # 2. Borra el servicio viejo que quedó atascado en <pending> hace más de 100 minutos
+          kubectl delete svc frontend-service -n innovatech --ignore-not-found=true
+          
+          # 3. Aplica los cambios para crear un balanceador de carga totalmente nuevo
           kubectl apply -f kubernetes/03-frontend.yaml
+
       - name: Obtener URL del Balanceador de Carga
         run: |
-          echo "Esperando 10 segundos para que AWS responda..."
-          sleep 10
+          echo "Esperando 20 segundos para que AWS cree el nuevo balanceador..."
+          sleep 20
           kubectl get svc frontend-service -n innovatech
-       
-       
-       
-
-        
-        
