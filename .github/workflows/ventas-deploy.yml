@@ -1,4 +1,4 @@
-name: Deploy Backend Ventas to ECR
+name: Deploy Backend Ventas to ECR and EKS
 
 on:
   push:
@@ -28,7 +28,21 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: "proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST"
+          file: "proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile"
           push: true
           tags: |
             ${{ secrets.ECR_REPO_URL_VENTAS }}:latest
             ${{ secrets.ECR_REPO_URL_VENTAS }}:${{ github.sha }}
+
+      # ==== CONFIGURACIÓN DE CD (DESPLIEGUE A AMAZON EKS) ====
+      - name: Update Kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+
+      - name: Deploy to EKS Clúster
+        run: |
+          # Reemplaza la imagen genérica por la de tu ECR real con el hash único
+          sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_VENTAS }}:${{ github.sha }}|g' kubernetes/02-ventas.yaml
+          
+          # Aplica los cambios en el clúster
+          kubectl apply -f kubernetes/02-ventas.yaml
