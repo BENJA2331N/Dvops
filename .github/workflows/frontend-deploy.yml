@@ -5,7 +5,6 @@ on:
     branches:
       - deploy
 
-
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -28,8 +27,8 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         uses: docker/build-push-action@v5
         with:
-          context: "./proyecto semestral/front_despacho"
-          
+          context: "proyecto semestral/front_despacho"
+          file: "proyecto semestral/front_despacho/Dockerfile"
           push: true
           tags: |
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
