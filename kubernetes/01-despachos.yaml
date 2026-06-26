@@ -21,8 +21,7 @@ spec:
     spec:
       containers:
         - name: despachos-container
-          # OJO: Aquí pondremos una imagen temporal. El pipeline la reemplazará automáticamente.
-          image: nginx:latest 
+          image: nginx:latest # El pipeline cambiará esto automáticamente por tu ECR
           ports:
             - containerPort: 8081
           env:
