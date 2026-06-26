@@ -60,3 +60,8 @@ jobs:
           echo "Esperando 20 segundos para que AWS cree el nuevo balanceador..."
           sleep 20
           kubectl get svc frontend-service -n innovatech
+
+      - name: Describir Servicio Frontend (Debugging)
+        run: |
+          kubectl describe svc frontend-service -n innovatech
+
