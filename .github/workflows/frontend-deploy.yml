@@ -6,6 +6,9 @@ on:
       - deploy
     paths:
       - 'proyecto semestral/front_despacho/**'
+      - 'kubernetes/03-frontend.yaml'
+      - '.github/workflows/frontend-deploy.yml'
+
 
 jobs:
   build-and-deploy:
