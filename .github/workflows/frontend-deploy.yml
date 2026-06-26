@@ -41,26 +41,31 @@ jobs:
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
 
-      # ==== CONFIGURACIÓN DE CD (DESPLIEGUE A AMAZON EKS) ====
+# ==== CONFIGURACIÓN DE CD (DESPLIEGUE A AMAZON EKS) ====
       - name: Update Kubeconfig for EKS
         run: |
-          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+          aws eks update-kubeconfig --name devopseks --region us-east-1
 
       - name: Deploy to EKS Clúster
         run: |
-          # 1. Reemplaza la imagen genérica por la de tu ECR real con el hash único del commit
           sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g' kubernetes/03-frontend.yaml
-          
-          # 2. Borra el servicio viejo que quedó atascado en <pending> hace más de 100 minutos
-          kubectl delete svc frontend-service -n innovatech --ignore-not-found=true
-          
-          # 3. Aplica los cambios para crear un balanceador de carga totalmente nuevo
           kubectl apply -f kubernetes/03-frontend.yaml
+
+      - name: FOTOS PARA DIAPOSITIVA 3 (Evidencia de Orquestación)
+        run: |
+          echo "Esperando a que los contenedores enciendan..."
+          sleep 15
           
-          # 4. Aplica el HorizontalPodAutoscaler para el autoscaling
-          kubectl apply -f kubernetes/04-autoscaling.yaml
-
-
+          echo "========================================="
+          echo "📸 FOTO 1: TUS MÁQUINAS (NODOS)"
+          echo "========================================="
+          kubectl get nodes -o wide
+          
+          echo ""
+          echo "========================================="
+          echo "📸 FOTO 2: TUS CONTENEDORES (PODS)"
+          echo "========================================="
+          kubectl get pods -n innovatech
       - name: Obtener URL del Balanceador de Carga
         run: |
           echo "Esperando 20 segundos para que AWS cree el nuevo balanceador..."
