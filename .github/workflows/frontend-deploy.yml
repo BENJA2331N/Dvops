@@ -37,18 +37,31 @@ jobs:
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
 
       # ==== CONFIGURACIÓN DE CD (DESPLIEGUE A AMAZON EKS) ====
+  # ==== CONFIGURACIÓN DE CD (DESPLIEGUE A AMAZON EKS) ====
       - name: Update Kubeconfig for EKS
         run: |
-          # Apuntamos directamente al clúster que sí tiene la máquina t3.large
           aws eks update-kubeconfig --name devopseks --region us-east-1
 
       - name: Deploy to EKS Clúster
         run: |
-          # 1. Reemplaza la imagen genérica por la de tu ECR real con el hash único del commit
           sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g' kubernetes/03-frontend.yaml
-          
-          # 2. Aplica los cambios en el clúster
           kubectl apply -f kubernetes/03-frontend.yaml
+
+      - name: FOTOS PARA DIAPOSITIVA 3 (Evidencia de Orquestación)
+        run: |
+          echo "Esperando a que los contenedores enciendan..."
+          sleep 15
+          
+          echo "========================================="
+          echo "📸 FOTO 1: TUS MÁQUINAS (NODOS)"
+          echo "========================================="
+          kubectl get nodes -o wide
+          
+          echo ""
+          echo "========================================="
+          echo "📸 FOTO 2: TUS CONTENEDORES (PODS)"
+          echo "========================================="
+          kubectl get pods -n innovatech
 
       - name: Verificar el estado del Despliegue (FOTOS PARA EL VIDEO)
         run: |
