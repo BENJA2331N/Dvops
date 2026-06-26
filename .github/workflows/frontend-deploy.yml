@@ -1,4 +1,4 @@
-name: Deploy Frontend
+name: Deploy Frontend to ECR and EKS
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
-          aws-region: ${{ secrets.AWS_REGION}}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Log in to Amazon ECR
         id: login-ecr
@@ -36,27 +36,24 @@ jobs:
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
             ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
 
-      - name: Deploy to EC2 via AWS SSM
+      # ==== CONFIGURACIÓN DE CD (DESPLIEGUE A AMAZON EKS) ====
+      - name: Update Kubeconfig for EKS
         run: |
-          # 1. Obtener la IP privada de la instancia de Backend usando AWS CLI
-          BACKEND_IP=$(aws ec2 describe-instances \
-            --instance-ids ${{ secrets.EC2_BACKEND_INSTANCE_ID }} \
-            --query "Reservations[0].Instances[0].PrivateIpAddress" \
-            --output text \
-            --region ${{ secrets.AWS_REGION }})
-          
-          echo "La IP privada del backend es: $BACKEND_IP"
+          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
 
-          # 2. Ejecutar comandos en la instancia del Frontend via SSM
-          aws ssm send-command \
-            --instance-ids ${{ secrets.EC2_FRONTEND_INSTANCE_ID }} \
-            --document-name "AWS-RunShellScript" \
-            --comment "Actualizar contenedor de Frontend" \
-            --parameters commands="[
-              'aws ecr get-login-password --region ${{ secrets.AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.ECR_REGISTRY }}',
-              'docker pull ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest',
-              'docker stop frontend || true',
-              'docker rm frontend || true',
-              'docker run -d --name frontend -p 80:8080 -e BACKEND_HOST=$BACKEND_IP ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest'
-            ]" \
-            --region ${{ secrets.AWS_REGION }}
+      - name: Deploy to EKS Clúster
+        run: |
+          # 1. Reemplaza la imagen genérica por la de tu ECR real con el hash único del commit
+          sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g' kubernetes/03-frontend.yaml
+          
+          # 2. Borra el servicio viejo que quedó atascado en <pending> hace más de 100 minutos
+          kubectl delete svc frontend-service -n innovatech --ignore-not-found=true
+          
+          # 3. Aplica los cambios para crear un balanceador de carga totalmente nuevo
+          kubectl apply -f kubernetes/03-frontend.yaml
+
+      - name: Obtener URL del Balanceador de Carga
+        run: |
+          echo "Esperando 20 segundos para que AWS cree el nuevo balanceador..."
+          sleep 20
+          kubectl get svc frontend-service -n innovatech
