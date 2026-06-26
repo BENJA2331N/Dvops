@@ -27,8 +27,8 @@ jobs:
       - name: Build, tag, and push image to Amazon ECR
         uses: docker/build-push-action@v5
         with:
-          context: "./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO"
-
+          context: "proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO"
+          file: "proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile"
           push: true
           tags: |
             ${{ secrets.ECR_REPO_URL_DESPACHOS }}:latest
