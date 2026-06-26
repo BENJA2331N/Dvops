@@ -39,21 +39,27 @@ jobs:
       # ==== CONFIGURACIÓN DE CD (DESPLIEGUE A AMAZON EKS) ====
       - name: Update Kubeconfig for EKS
         run: |
-          aws eks update-kubeconfig --name ${{ secrets.EKS_CLUSTER_NAME }} --region ${{ secrets.AWS_REGION }}
+          # Apuntamos directamente al clúster que sí tiene la máquina t3.large
+          aws eks update-kubeconfig --name devopseks --region us-east-1
 
       - name: Deploy to EKS Clúster
         run: |
           # 1. Reemplaza la imagen genérica por la de tu ECR real con el hash único del commit
           sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g' kubernetes/03-frontend.yaml
           
-          # 2. Borra el servicio viejo que quedó atascado en <pending> hace más de 100 minutos
-          kubectl delete svc frontend-service -n innovatech --ignore-not-found=true
-          
-          # 3. Aplica los cambios para crear un balanceador de carga totalmente nuevo
+          # 2. Aplica los cambios en el clúster
           kubectl apply -f kubernetes/03-frontend.yaml
 
-      - name: Obtener URL del Balanceador de Carga
+      - name: Verificar el estado del Despliegue (FOTOS PARA EL VIDEO)
         run: |
-          echo "Esperando 20 segundos para que AWS cree el nuevo balanceador..."
-          sleep 20
-          kubectl get svc frontend-service -n innovatech
+          echo "Dándole 15 segundos a los contenedores para encender..."
+          sleep 15
+          
+          echo "==== 1. ESTADO DE TUS MÁQUINAS (NODOS) ===="
+          kubectl get nodes -o wide
+          
+          echo "==== 2. ESTADO DE TUS CONTENEDORES (PODS) ===="
+          kubectl get pods -n innovatech
+          
+          echo "==== 3. ESTADO DE TU RED (SERVICIOS) ===="
+          kubectl get svc -n innovatech
