@@ -48,8 +48,14 @@ jobs:
 
       - name: Deploy to EKS Clúster
         run: |
-          sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g' kubernetes/03-frontend.yaml
-          kubectl apply -f kubernetes/03-frontend.yaml
+          # 1. Creamos la "carpeta" innovatech (si ya existe, el || true evita que falle)
+          kubectl create namespace innovatech || true
+          
+          # 2. Reemplaza la imagen genérica por la de tu ECR real
+          sed -i 's|nginx:latest|${{ secrets.ECR_REPO_URL_VENTAS }}:${{ github.sha }}|g' kubernetes/02-ventas.yaml
+          
+          # 3. Aplica los cambios en el clúster
+          kubectl apply -f kubernetes/02-ventas.yaml
 
       - name: FOTOS PARA DIAPOSITIVA 3 (Evidencia de Orquestación)
         run: |
