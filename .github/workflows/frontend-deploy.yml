@@ -7,7 +7,9 @@ on:
     paths:
       - 'proyecto semestral/front_despacho/**'
       - 'kubernetes/03-frontend.yaml'
+      - 'kubernetes/04-autoscaling.yaml'
       - '.github/workflows/frontend-deploy.yml'
+
 
 
 jobs:
@@ -54,6 +56,10 @@ jobs:
           
           # 3. Aplica los cambios para crear un balanceador de carga totalmente nuevo
           kubectl apply -f kubernetes/03-frontend.yaml
+          
+          # 4. Aplica el HorizontalPodAutoscaler para el autoscaling
+          kubectl apply -f kubernetes/04-autoscaling.yaml
+
 
       - name: Obtener URL del Balanceador de Carga
         run: |

@@ -1,0 +1,13 @@
+apiVersion: eks.amazonaws.com/v1
+kind: NodeClass
+metadata:
+  name: academy-nodeclass
+spec:
+  instanceProfile: LabInstanceProfile
+  securityGroupSelectorTerms:
+  - id: sg-0dd62c54fd29b045c
+  subnetSelectorTerms:
+  - id: subnet-006b10f3f3b37fe44
+  - id: subnet-0bc7ea02403563fe7
+  - id: subnet-0fe2e712d31dcc7e2
+  - id: subnet-0c986644deb509c40
