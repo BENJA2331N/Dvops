@@ -1,0 +1,49 @@
+name: Deploy Tienda Perritos to EKS
+
+on:
+  push:
+    branches: [deploy]
+    paths:
+      - 'tienda-perritos/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push Frontend
+        run: |
+          docker build -t tienda-frontend ./tienda-perritos/frontend
+          docker tag tienda-frontend:latest 705271554338.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:${{ github.sha }}
+          docker push 705271554338.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:${{ github.sha }}
+
+      - name: Build and push Backend
+        run: |
+          docker build -t tienda-backend ./tienda-perritos/backend
+          docker tag tienda-backend:latest 705271554338.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:${{ github.sha }}
+          docker push 705271554338.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:${{ github.sha }}
+
+      - name: Update kubeconfig and deploy
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name devopseks
+          kubectl set image deployment/tienda-frontend \
+            tienda-frontend=705271554338.dkr.ecr.us-east-1.amazonaws.com/tienda-frontend:${{ github.sha }} \
+            -n tienda
+          kubectl set image deployment/tienda-backend \
+            tienda-backend=705271554338.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:${{ github.sha }} \
+            -n tienda
+          kubectl rollout status deployment/tienda-frontend -n tienda --timeout=120s
+          kubectl rollout status deployment/tienda-backend -n tienda --timeout=120s
