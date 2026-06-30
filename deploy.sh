@@ -20,47 +20,47 @@ echo "===================================="
 
 # 1. Actualizar kubeconfig para conectarse al clúster EKS
 echo ""
-echo "🔄 Actualizando kubeconfig para EKS..."
+echo "Actualizando kubeconfig para EKS..."
 aws eks update-kubeconfig --region ${REGION} --name ${CLUSTER_NAME}
 
 # 2. Autenticar Docker con Amazon ECR
 echo ""
-echo "🔑 Iniciando sesión en Amazon ECR..."
+echo "Iniciando sesión en Amazon ECR..."
 aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ECR_URL}
 
 # 3. Crear el Namespace 'innovatech' si no existe
 echo ""
-echo "📂 Creando namespace 'innovatech' si no existe..."
+echo "Creando namespace 'innovatech' si no existe..."
 kubectl create namespace innovatech || true
 
 # 4. Construcción y subida de imágenes a ECR
 echo ""
-echo "🚀 Iniciando compilación de imágenes Docker..."
+echo "Iniciando compilación de imágenes Docker..."
 
 # A. Backend Despachos
 echo "----------------------------------------"
-echo "🛠️  Construyendo Backend Despachos..."
+echo "Construyendo Backend Despachos..."
 docker build -t despachos "./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO"
 docker tag despachos:latest ${ECR_URL}/despachos:latest
 docker push ${ECR_URL}/despachos:latest
 
 # B. Backend Ventas
 echo "----------------------------------------"
-echo "🛠️  Construyendo Backend Ventas..."
+echo "Construyendo Backend Ventas..."
 docker build -t ventas "./proyecto semestral/back-Ventas_SpringBoot/Springboot-API-REST"
 docker tag ventas:latest ${ECR_URL}/ventas:latest
 docker push ${ECR_URL}/ventas:latest
 
 # C. Frontend
 echo "----------------------------------------"
-echo "🛠️  Construyendo Frontend..."
+echo "Construyendo Frontend..."
 docker build -t frontend "./proyecto semestral/front_despacho"
 docker tag frontend:latest ${ECR_URL}/frontend:latest
 docker push ${ECR_URL}/frontend:latest
 
 # 5. Modificar manifiestos con la imagen correcta y desplegar
 echo ""
-echo "📋 Aplicando manifiestos en Kubernetes..."
+echo "Aplicando manifiestos en Kubernetes..."
 
 # Backend Despachos
 echo "Desplegando Backend Despachos..."
@@ -83,22 +83,22 @@ kubectl apply -f kubernetes/04-autoscaling.yaml
 
 # 6. Monitoreo y Verificación
 echo ""
-echo "⏳ Esperando 15 segundos a que inicien los contenedores..."
+echo "Esperando 15 segundos a que inicien los contenedores..."
 sleep 15
 
 echo "========================================="
-echo "📸 EVIDENCIA: ESTADO DE MÁQUINAS (NODOS)"
+echo "EVIDENCIA: ESTADO DE MÁQUINAS (NODOS)"
 echo "========================================="
 kubectl get nodes -o wide
 
 echo ""
 echo "========================================="
-echo "📸 EVIDENCIA: ESTADO DE CONTENEDORES (PODS)"
+echo "EVIDENCIA: ESTADO DE CONTENEDORES (PODS)"
 echo "========================================="
 kubectl get pods -n innovatech
 
 echo ""
 echo "========================================="
-echo "📸 EVIDENCIA: ESTADO DE SERVICIOS (CONEXIONES Y URL)"
+echo "EVIDENCIA: ESTADO DE SERVICIOS (CONEXIONES Y URL)"
 echo "========================================="
 kubectl get svc -n innovatech
