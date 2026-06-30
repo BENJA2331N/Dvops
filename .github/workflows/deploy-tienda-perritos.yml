@@ -3,9 +3,6 @@ name: Deploy Tienda Perritos to EKS
 on:
   push:
     branches: [deploy]
-    paths:
-      - 'tienda-perritos/**'
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
