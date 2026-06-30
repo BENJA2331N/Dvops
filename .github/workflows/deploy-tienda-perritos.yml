@@ -44,6 +44,6 @@ jobs:
             -n tienda
           kubectl set image deployment/tienda-backend \
             tienda-backend=705271554338.dkr.ecr.us-east-1.amazonaws.com/tienda-backend:${{ github.sha }} \
-            -n tienda
+            -n tienda    
           kubectl rollout status deployment/tienda-frontend -n tienda --timeout=120s
           kubectl rollout status deployment/tienda-backend -n tienda --timeout=120s
