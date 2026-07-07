@@ -6,7 +6,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  EKS_CLUSTER_NAME: innovatech-eks
+  EKS_CLUSTER_NAME: confused-country-monster
 
 jobs:
   build-and-push:
