@@ -177,9 +177,9 @@ kubectl top pods -n tienda
 
 ## 👥 Equipo
 
-- Benjamin Serrano
-- Emilio Araya
-- Luis Villalobos
+- Benjamin Nuñez 
+- Luis Ugalde
+- Constanza Ulloa
 
 ---
 
