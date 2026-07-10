@@ -13,4 +13,4 @@ data:
   DB_NAME: "despacho_db"
   DB_USERNAME: "despacho_user"
   DB_PASSWORD: "despacho_password"
-  DB_ENDPOINT: "database.innovatech.local" # Cambiar por la IP o DNS de tu DB
+  DB_ENDPOINT: "REPLACE_DB_ENDPOINT"

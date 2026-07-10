@@ -35,8 +35,8 @@ jobs:
           file: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile
           push: true
           tags: |
-            ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
-            ${{ secrets.ECR_REPO_URL_BACKEND }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/back-despachos:latest
+            ${{ steps.login-ecr.outputs.registry }}/back-despachos:${{ github.sha }}
 
       - name: Build and push Backend Ventas
         uses: docker/build-push-action@v5
@@ -45,8 +45,8 @@ jobs:
           file: ./back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile
           push: true
           tags: |
-            ${{ secrets.ECR_REPO_URL_VENTAS }}:latest
-            ${{ secrets.ECR_REPO_URL_VENTAS }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/back-ventas:latest
+            ${{ steps.login-ecr.outputs.registry }}/back-ventas:${{ github.sha }}
 
       - name: Build and push Frontend
         uses: docker/build-push-action@v5
@@ -55,8 +55,8 @@ jobs:
           file: ./front_despacho/Dockerfile
           push: true
           tags: |
-            ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
-            ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/front-despacho:latest
+            ${{ steps.login-ecr.outputs.registry }}/front-despacho:${{ github.sha }}
 
       - name: Update kubeconfig
         run: |
@@ -64,11 +64,20 @@ jobs:
             --name ${{ env.EKS_CLUSTER_NAME }} \
             --region ${{ env.AWS_REGION }}
 
-      - name: Inject image tags into manifests
+      - name: Inject dynamic variables into manifests
         run: |
-          sed -i "s|REPLACE_IMAGE_BACKEND_DESPACHOS|${{ secrets.ECR_REPO_URL_BACKEND }}:${{ github.sha }}|g" k8s/01-backend-despachos.yaml
-          sed -i "s|REPLACE_IMAGE_BACKEND_VENTAS|${{ secrets.ECR_REPO_URL_VENTAS }}:${{ github.sha }}|g" k8s/02-backend-ventas.yaml
-          sed -i "s|REPLACE_IMAGE_FRONTEND|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g" k8s/03-frontend.yaml
+          DB_IP=$(aws ec2 describe-instances \
+            --instance-ids ${{ secrets.EC2_DB_INSTANCE_ID }} \
+            --query "Reservations[0].Instances[0].PrivateIpAddress" \
+            --output text \
+            --region ${{ env.AWS_REGION }})
+          echo "La IP privada de la base de datos es: $DB_IP"
+          
+          sed -i "s|REPLACE_DB_ENDPOINT|$DB_IP|g" k8s/00-namespace-config.yaml
+          
+          sed -i "s|REPLACE_IMAGE_BACKEND_DESPACHOS|${{ steps.login-ecr.outputs.registry }}/back-despachos:${{ github.sha }}|g" k8s/01-backend-despachos.yaml
+          sed -i "s|REPLACE_IMAGE_BACKEND_VENTAS|${{ steps.login-ecr.outputs.registry }}/back-ventas:${{ github.sha }}|g" k8s/02-backend-ventas.yaml
+          sed -i "s|REPLACE_IMAGE_FRONTEND|${{ steps.login-ecr.outputs.registry }}/front-despacho:${{ github.sha }}|g" k8s/03-frontend.yaml
 
       - name: Deploy manifests to EKS
         run: |
