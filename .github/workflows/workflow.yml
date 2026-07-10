@@ -1,0 +1,80 @@
+name: Build and Deploy to Amazon EKS
+
+on:
+  push:
+    branches: [ deploy ]
+
+env:
+  AWS_REGION: us-east-1
+  EKS_CLUSTER_NAME: devopseks
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Backend Despachos
+        uses: docker/build-push-action@v5
+        with:
+          context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          file: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ECR_REPO_URL_BACKEND }}:latest
+            ${{ secrets.ECR_REPO_URL_BACKEND }}:${{ github.sha }}
+
+      - name: Build and push Backend Ventas
+        uses: docker/build-push-action@v5
+        with:
+          context: ./back-Ventas_SpringBoot/Springboot-API-REST
+          file: ./back-Ventas_SpringBoot/Springboot-API-REST/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ECR_REPO_URL_VENTAS }}:latest
+            ${{ secrets.ECR_REPO_URL_VENTAS }}:${{ github.sha }}
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./front_despacho
+          file: ./front_despacho/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.ECR_REPO_URL_FRONTEND }}:latest
+            ${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig \
+            --name ${{ env.EKS_CLUSTER_NAME }} \
+            --region ${{ env.AWS_REGION }}
+
+      - name: Inject image tags into manifests
+        run: |
+          sed -i "s|REPLACE_IMAGE_BACKEND_DESPACHOS|${{ secrets.ECR_REPO_URL_BACKEND }}:${{ github.sha }}|g" k8s/01-backend-despachos.yaml
+          sed -i "s|REPLACE_IMAGE_BACKEND_VENTAS|${{ secrets.ECR_REPO_URL_VENTAS }}:${{ github.sha }}|g" k8s/02-backend-ventas.yaml
+          sed -i "s|REPLACE_IMAGE_FRONTEND|${{ secrets.ECR_REPO_URL_FRONTEND }}:${{ github.sha }}|g" k8s/03-frontend.yaml
+
+      - name: Deploy manifests to EKS
+        run: |
+          kubectl apply -f k8s/
+
+      - name: Verify deployment
+        run: |
+          kubectl get all -n innovatech
+          kubectl get pods -n innovatech -o wide

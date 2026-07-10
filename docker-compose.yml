@@ -17,7 +17,7 @@ services:
 
   backend:
     build:
-      context: ./proyecto semestral/back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+      context: ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
       dockerfile: Dockerfile
     container_name: despacho_backend
     ports:
@@ -34,7 +34,7 @@ services:
 
   frontend:
     build:
-      context: ./proyecto semestral/front_despacho
+      context: ./front_despacho
       dockerfile: Dockerfile
     container_name: despacho_frontend
     ports:

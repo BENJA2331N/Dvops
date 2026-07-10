@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: innovatech
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: innovatech
+data:
+  DB_PORT: "3306"
+  DB_NAME: "despacho_db"
+  DB_USERNAME: "despacho_user"
+  DB_PASSWORD: "despacho_password"
+  DB_ENDPOINT: "database.innovatech.local" # Cambiar por la IP o DNS de tu DB
