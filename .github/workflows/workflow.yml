@@ -28,6 +28,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      - name: Ensure ECR repositories exist
+        run: |
+          REPOS=("back-despachos" "back-ventas" "front-despacho")
+          for REPO in "${REPOS[@]}"; do
+            aws ecr describe-repositories --repository-names $REPO --region ${{ env.AWS_REGION }} || aws ecr create-repository --repository-name $REPO --region ${{ env.AWS_REGION }}
+          done
+
       - name: Build and push Backend Despachos
         uses: docker/build-push-action@v5
         with:
