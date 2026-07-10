@@ -17,7 +17,10 @@ spec:
       - name: frontend
         image: REPLACE_IMAGE_FRONTEND
         ports:
-        - containerPort: 80
+        - containerPort: 8080
+        env:
+        - name: BACKEND_HOST
+          value: "backend-despachos"
 ---
 apiVersion: v1
 kind: Service
@@ -31,4 +34,4 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 80
+      targetPort: 8080
