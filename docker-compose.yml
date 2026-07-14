@@ -50,6 +50,9 @@ services:
     depends_on:
       - back-ventas
       - back-despachos
+    environment:
+      - REACT_APP_VENTAS_URL=http://back-ventas:8080
+      - REACT_APP_DESPACHOS_URL=http://back-despachos:8081
     networks:
       - red-proyecto
 
