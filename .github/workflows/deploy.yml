@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  EKS_CLUSTER: devops-eks
+  EKS_CLUSTER: Dvops-examen
 
 jobs:
   deploy:
@@ -35,24 +35,24 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -t $ECR_REGISTRY/innovatech-backend:latest ./back-Ventas_SpringBoot/Springboot-API-REST
-          docker push $ECR_REGISTRY/innovatech-backend:latest
+          docker build -t $ECR_REGISTRY/back-ventas:latest ./back-Ventas_SpringBoot/Springboot-API-REST
+          docker push $ECR_REGISTRY/back-ventas:latest
 
       # --- BACK DESPACHOS ---
       - name: Build y Push back-despachos
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -t $ECR_REGISTRY/innovatech-backend2:latest ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
-          docker push $ECR_REGISTRY/innovatech-backend2:latest
+          docker build -t $ECR_REGISTRY/back-despachos:latest ./back-Despachos_SpringBoot/Springboot-API-REST-DESPACHO
+          docker push $ECR_REGISTRY/back-despachos:latest
 
       # --- FRONTEND ---
       - name: Build y Push front-despacho
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          docker build -t $ECR_REGISTRY/innovatech-frontend:latest ./front_despacho
-          docker push $ECR_REGISTRY/innovatech-frontend:latest
+          docker build -t $ECR_REGISTRY/front-despacho:latest ./front_despacho
+          docker push $ECR_REGISTRY/front-despacho:latest
 
       # --- DEPLOY A EKS ---
       - name: Configurar kubectl
@@ -63,9 +63,10 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
-          kubectl set image deployment/back-ventas back-ventas=$ECR_REGISTRY/innovatech-backend:latest
-          kubectl set image deployment/back-despachos back-despachos=$ECR_REGISTRY/innovatech-backend2:latest
-          kubectl set image deployment/front-despacho front-despacho=$ECR_REGISTRY/innovatech-frontend:latest
+          kubectl apply -f k8s/
+          kubectl set image deployment/back-ventas back-ventas=$ECR_REGISTRY/back-ventas:latest
+          kubectl set image deployment/back-despachos back-despachos=$ECR_REGISTRY/back-despachos:latest
+          kubectl set image deployment/front-despacho front-despacho=$ECR_REGISTRY/front-despacho:latest
           echo "Images updated successfully"
 
       - name: Verificar pods
