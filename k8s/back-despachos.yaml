@@ -23,6 +23,16 @@ spec:
                 secretKeyRef:
                   name: back-despachos-secret
                   key: SPRING_PROFILES_ACTIVE
+                    - name: DB_ENDPOINT
+              value: "database"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "db_proyecto"
+            - name: DB_USERNAME
+              value: "user_proyecto"
+            - name: DB_PASSWORD
+              value: "password_proyecto"
           resources:
             requests:
               cpu: "200m"
