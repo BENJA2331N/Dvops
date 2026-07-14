@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      containers:
+        - name: mysql
+          image: 904615392809.dkr.ecr.us-east-1.amazonaws.com/mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: db_proyecto
+            - name: MYSQL_USER
+              value: user_proyecto
+            - name: MYSQL_PASSWORD
+              value: password_proyecto
+            - name: MYSQL_ROOT_PASSWORD
+              value: root_password
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "300m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+spec:
+  selector:
+    app: database
+  ports:
+    - port: 3306
+      targetPort: 3306
+  type: ClusterIP
