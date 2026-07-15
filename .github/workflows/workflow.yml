@@ -6,7 +6,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  EKS_CLUSTER_NAME: eks-semestral
+  EKS_CLUSTER_NAME: Dvops-examen
 
 jobs:
   build-and-deploy:

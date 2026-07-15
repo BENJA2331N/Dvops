@@ -22,7 +22,7 @@ El flujo de despliegue automatizado (*end-to-end*) sigue este ciclo autónomo:
 
 El proyecto se despliega sobre una infraestructura robusta en la nube de AWS que incluye:
 
-- **Amazon EKS (Elastic Kubernetes Service)**: Clúster principal `eks-semestral` responsable de orquestar todos los contenedores y asegurar escalabilidad.
+- **Amazon EKS (Elastic Kubernetes Service)**: Clúster principal `Dvops-examen` responsable de orquestar todos los contenedores y asegurar escalabilidad.
 - **Amazon ECR (Elastic Container Registry)**: Creación automatizada desde el pipeline y almacenamiento de imágenes Docker privadas.
 - **Amazon EC2**: Alojamiento de la base de datos relacional (MySQL).
 - **Elastic Load Balancer (ELB)**: Punto de entrada público (balanceador de carga) asignado de forma dinámica por Kubernetes para exponer el frontend.
